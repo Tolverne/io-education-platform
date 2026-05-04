@@ -44,9 +44,8 @@ jobs:
         uses: aws-actions/amazon-ecs-deploy-express-service@v1
         with:
           service-name: ${{ vars.ECS_SERVICE_NAME }}
-          primary-container-image: ${{ steps.build-image.outputs.image_uri }}
-          primary-container-port: 8080
-          health-check-path: /health
+          image: ${{ steps.build-image.outputs.image_uri }}
           execution-role-arn: ${{ vars.TASK_EXECUTION_ROLE_ARN }}
           infrastructure-role-arn: ${{ vars.INFRASTRUCTURE_ROLE_ARN }}
-          monitor-resources: true
+          container-port: 8080
+          health-check-path: /health
