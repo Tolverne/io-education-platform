@@ -1,9 +1,10 @@
-node_modules
-dist
-.venv
-__pycache__
+.vs/
+node_modules/
+dist/
+.venv/
+__pycache__/
+*.pyc
 .env
 .env.local
 .DS_Store
-.vscode/*
-!.vscode/extensions.json
+.vscode/
