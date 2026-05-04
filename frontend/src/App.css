@@ -1,0 +1,48 @@
+.app-shell {
+    min-height: 100vh;
+    display: grid;
+    place-items: center;
+    background: #f7fafc;
+    color: #102a43;
+    font-family: system-ui, sans-serif;
+}
+
+.hero {
+    max-width: 720px;
+    padding: 3rem;
+    text-align: center;
+}
+
+h1 {
+    font-size: 3rem;
+    margin-bottom: 0.5rem;
+}
+
+.card {
+    margin: 2rem auto;
+    padding: 1.5rem;
+    max-width: 360px;
+    border-radius: 18px;
+    background: white;
+    box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+}
+
+.actions {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+}
+
+button {
+    border: 0;
+    border-radius: 999px;
+    padding: 0.85rem 1.25rem;
+    background: #0f766e;
+    color: white;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+    button.secondary {
+        background: #1d4ed8;
+    }
