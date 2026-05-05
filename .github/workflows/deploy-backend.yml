@@ -9,6 +9,9 @@ on:
       - ".github/workflows/deploy-backend.yml"
   workflow_dispatch:
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 permissions:
   id-token: write
   contents: read
