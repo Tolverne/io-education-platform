@@ -20,7 +20,10 @@ const schema = a
                 classCode: a.string().required(),
                 createdAtIso: a.string(),
             })
-            .authorization((allow) => [allow.owner()]),
+            .authorization((allow) => [
+                allow.owner(),
+                allow.guest().to(["read"]),
+            ]),
 
         StudentSlot: a
             .model({
@@ -31,7 +34,10 @@ const schema = a
                 revoked: a.boolean().default(false),
                 createdAtIso: a.string(),
             })
-            .authorization((allow) => [allow.owner()]),
+            .authorization((allow) => [
+                allow.owner(),
+                allow.guest().to(["read"]),
+            ]),
 
         ActivateStudentResponse: a.customType({
             success: a.boolean(),

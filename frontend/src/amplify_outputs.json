@@ -207,6 +207,13 @@
                       "delete",
                       "read"
                     ]
+                  },
+                  {
+                    "allow": "public",
+                    "provider": "identityPool",
+                    "operations": [
+                      "read"
+                    ]
                   }
                 ]
               }
@@ -307,6 +314,13 @@
                       "create",
                       "update",
                       "delete",
+                      "read"
+                    ]
+                  },
+                  {
+                    "allow": "public",
+                    "provider": "identityPool",
+                    "operations": [
                       "read"
                     ]
                   }
