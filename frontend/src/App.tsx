@@ -9,19 +9,7 @@ function makeClassCode() {
     return Math.random().toString(36).slice(2, 8).toUpperCase();
 }
 
-async function loadStudentSlots(classId: string) {
-    setSelectedClassId(classId);
 
-    const result = await client.models.StudentSlot.list({
-        filter: {
-            classId: {
-                eq: classId,
-            },
-        },
-    });
-
-    setStudentSlots(result.data);
-}
 
 function TeacherDashboard({ signOut, user }: any) {
     const [classes, setClasses] = useState<any[]>([]);
@@ -37,12 +25,28 @@ function TeacherDashboard({ signOut, user }: any) {
         [user]
     );
 
+    async function loadStudentSlots(classId: string) {
+        setSelectedClassId(classId);
+
+        const result = await client.models.StudentSlot.list({
+            filter: {
+                classId: {
+                    eq: classId,
+                },
+            },
+        });
+
+        setStudentSlots(result.data);
+    }
+
     async function loadClasses() {
         setIsLoading(true);
         const result = await client.models.Class.list({});
         setClasses(result.data);
         setIsLoading(false);
     }
+
+
 
     async function createClass() {
         if (!className.trim()) return;
@@ -138,7 +142,13 @@ function TeacherDashboard({ signOut, user }: any) {
 
                                     <div className="row-actions">
                                         <code>{klass.classCode}</code>
-                                        <button onClick={() => loadStudentSlots(klass.id)}>View students</button>
+                                        <button
+                                            onClick={() => {
+                                                if (klass.id) loadStudentSlots(klass.id);
+                                            }}
+                                        >
+                                            View students
+                                        </button>
                                     </div>
                                 </div>
                             ))}
