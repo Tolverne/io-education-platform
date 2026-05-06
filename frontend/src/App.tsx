@@ -1,17 +1,16 @@
 import { useEffect, useMemo, useState } from "react";
 import { Authenticator } from "@aws-amplify/ui-react";
 import { generateClient } from "aws-amplify/data";
-import type { Schema } from "../../amplify/data/resource";
 import "./App.css";
 
-const client = generateClient<Schema>();
+const client = generateClient<any>();
 
 function makeClassCode() {
     return Math.random().toString(36).slice(2, 8).toUpperCase();
 }
 
 function TeacherDashboard({ signOut, user }: any) {
-    const [classes, setClasses] = useState<Array<Schema["Class"]["type"]>>([]);
+    const [classes, setClasses] = useState<any[]>([]);
     const [className, setClassName] = useState("");
     const [subject, setSubject] = useState("IB Mathematics AA");
     const [yearLevel, setYearLevel] = useState("Year 11");
@@ -24,7 +23,7 @@ function TeacherDashboard({ signOut, user }: any) {
 
     async function loadClasses() {
         setIsLoading(true);
-        const result = await client.models.Class.list();
+        const result = await client.models.Class.list({});
         setClasses(result.data);
         setIsLoading(false);
     }
