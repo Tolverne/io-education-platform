@@ -31,7 +31,7 @@ function TeacherDashboard({ signOut, user }: any) {
     async function createClass() {
         if (!className.trim()) return;
 
-        await client.models.Class.create({
+        const newClass = await client.models.Class.create({
             name: className.trim(),
             subject,
             yearLevel,
@@ -39,6 +39,21 @@ function TeacherDashboard({ signOut, user }: any) {
             classCode: makeClassCode(),
             createdAtIso: new Date().toISOString(),
         });
+
+        const classId = newClass.data?.id;
+
+        if (classId) {
+            const slots = Array.from({ length: 30 }).map((_, i) => ({
+                classId,
+                studentCode: Math.random().toString(36).slice(2, 10),
+                label: `Student ${i + 1}`,
+                createdAtIso: new Date().toISOString(),
+            }));
+
+            for (const slot of slots) {
+                await client.models.StudentSlot.create(slot);
+            }
+        }
 
         setClassName("");
         await loadClasses();
