@@ -1,9 +1,50 @@
 import { useEffect, useMemo, useState } from "react";
 import { Authenticator } from "@aws-amplify/ui-react";
+import type { AuthUser } from "aws-amplify/auth";
 import { generateClient } from "aws-amplify/data";
 import "./App.css";
 
-const client = generateClient<any>();
+type TeacherDashboardProps = {
+    signOut?: () => void;
+    user?: AuthUser;
+};
+
+type ClassRecord = {
+    id: string;
+    name?: string | null;
+    subject?: string | null;
+    yearLevel?: string | null;
+    classCode?: string | null;
+};
+
+type StudentSlotRecord = {
+    id: string;
+    classId?: string | null;
+    studentCode?: string | null;
+    label?: string | null;
+};
+
+type ModelResult<T> = {
+    data?: T | null;
+};
+
+type ListResult<T> = {
+    data?: T[];
+};
+
+type ClientModels = {
+    Class: {
+        list: (input?: object) => Promise<ListResult<ClassRecord>>;
+        create: (input: object) => Promise<ModelResult<ClassRecord>>;
+    };
+    StudentSlot: {
+        list: (input?: object) => Promise<ListResult<StudentSlotRecord>>;
+        create: (input: object) => Promise<ModelResult<StudentSlotRecord>>;
+    };
+};
+
+const client = generateClient();
+const models = client.models as unknown as ClientModels;
 
 function makeClassCode() {
     return Math.random().toString(36).slice(2, 8).toUpperCase();
@@ -13,9 +54,9 @@ function makeStudentCode() {
     return Math.random().toString(36).slice(2, 10).toUpperCase();
 }
 
-function TeacherDashboard({ signOut, user }: any) {
-    const [classes, setClasses] = useState<any[]>([]);
-    const [studentSlots, setStudentSlots] = useState<any[]>([]);
+function TeacherDashboard({ signOut, user }: TeacherDashboardProps) {
+    const [classes, setClasses] = useState<ClassRecord[]>([]);
+    const [studentSlots, setStudentSlots] = useState<StudentSlotRecord[]>([]);
     const [selectedClassId, setSelectedClassId] = useState<string | null>(null);
 
     const [className, setClassName] = useState("");
@@ -30,7 +71,7 @@ function TeacherDashboard({ signOut, user }: any) {
 
     async function loadClasses() {
         setIsLoading(true);
-        const result = await client.models.Class.list({});
+        const result = await models.Class.list({});
         setClasses(result.data ?? []);
         setIsLoading(false);
     }
@@ -38,7 +79,7 @@ function TeacherDashboard({ signOut, user }: any) {
     async function loadStudentSlots(classId: string) {
         setSelectedClassId(classId);
 
-        const result = await client.models.StudentSlot.list({
+        const result = await models.StudentSlot.list({
             filter: {
                 classId: {
                     eq: classId,
@@ -54,7 +95,7 @@ function TeacherDashboard({ signOut, user }: any) {
 
         const classCode = makeClassCode();
 
-        const newClass = await client.models.Class.create({
+        const newClass = await models.Class.create({
             name: className.trim(),
             subject,
             yearLevel,
@@ -67,7 +108,7 @@ function TeacherDashboard({ signOut, user }: any) {
 
         if (classId) {
             for (let i = 0; i < 30; i++) {
-                await client.models.StudentSlot.create({
+                await models.StudentSlot.create({
                     classId,
                     studentCode: makeStudentCode(),
                     label: `Student ${i + 1}`,
@@ -156,7 +197,10 @@ function TeacherDashboard({ signOut, user }: any) {
                 {selectedClassId && (
                     <div className="card wide-card">
                         <h2>Anonymous student slots</h2>
-                        <p>These are anonymous IDs. Do not store student names or emails online.</p>
+                        <p>
+                            These are anonymous IDs. Do not store student names or emails
+                            online.
+                        </p>
 
                         <div className="student-grid">
                             {studentSlots.map((slot) => (
