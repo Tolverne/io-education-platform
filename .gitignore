@@ -8,3 +8,8 @@ __pycache__/
 .env.local
 .DS_Store
 .vscode/
+
+# amplify
+.amplify
+amplify_outputs*
+amplifyconfiguration*

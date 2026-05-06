@@ -75,6 +75,34 @@ function Landing({ setMode }: { setMode: (mode: Mode) => void }) {
 }
 
 
+type ActivateStudentPayload = {
+    success?: boolean | null;
+    message?: string | null;
+    classId?: string | null;
+    studentSlotId?: string | null;
+    classCode?: string | null;
+    studentCode?: string | null;
+};
+
+type ActivateStudentResult = {
+    data?: ActivateStudentPayload | null;
+    errors?: Array<{ message?: string }> | null;
+};
+
+type StudentActivationClient = {
+    queries: {
+        activateStudent: (
+            input: {
+                classCode: string;
+                studentCode: string;
+            },
+            options?: {
+                authMode?: "identityPool";
+            }
+        ) => Promise<ActivateStudentResult>;
+    };
+};
+
 function StudentAccess({
     onSuccess,
     goBack,
@@ -86,17 +114,13 @@ function StudentAccess({
         () =>
             generateClient({
                 authMode: "identityPool",
-            }),
+            }) as unknown as StudentActivationClient,
         []
-    );
-
-    const models = useMemo(
-        () => client.models as unknown as ClientModels,
-        [client]
     );
 
     const [classCode, setClassCode] = useState("");
     const [studentCode, setStudentCode] = useState("");
+    const [isSubmitting, setIsSubmitting] = useState(false);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
     async function handleStudentEntry() {
@@ -105,57 +129,50 @@ function StudentAccess({
         const normalisedClassCode = classCode.trim().toUpperCase();
         const normalisedStudentCode = studentCode.trim().toUpperCase();
 
+        if (!normalisedClassCode || !normalisedStudentCode) {
+            setErrorMessage("Please enter both the class code and student code.");
+            return;
+        }
+
+        setIsSubmitting(true);
+
         try {
-            const classResult = await models.Class.list({
-                authMode: "identityPool",
-            });
-
-            console.log("Guest class lookup result:", classResult);
-            console.log(
-                "Visible class codes:",
-                (classResult.data ?? []).map((klass) => klass.classCode)
+            const result = await client.queries.activateStudent(
+                {
+                    classCode: normalisedClassCode,
+                    studentCode: normalisedStudentCode,
+                },
+                {
+                    authMode: "identityPool",
+                }
             );
 
-            const foundClass = (classResult.data ?? []).find(
-                (klass) => klass.classCode === normalisedClassCode
-            );
-
-            if (!foundClass) {
-                setErrorMessage("Invalid class code.");
+            if (result.errors && result.errors.length > 0) {
+                console.error("Student activation errors:", result.errors);
+                setErrorMessage("Could not access student workspace.");
                 return;
             }
 
-            const slotResult = await models.StudentSlot.list({
-                filter: {
-                    classId: {
-                        eq: foundClass.id,
-                    },
-                },
-                authMode: "identityPool",
-            });
+            const activation = result.data;
 
-            console.log("Guest student slot lookup result:", slotResult);
-            console.log(
-                "Visible student codes:",
-                (slotResult.data ?? []).map((slot) => slot.studentCode)
-            );
+            if (!activation?.success) {
+                setErrorMessage(activation?.message ?? "Invalid class or student code.");
+                return;
+            }
 
-            const foundSlot = (slotResult.data ?? []).find(
-                (slot) => slot.studentCode === normalisedStudentCode
-            );
-
-            if (!foundSlot) {
-                setErrorMessage("Invalid student code.");
+            if (!activation.classId || !activation.studentSlotId) {
+                console.error("Student activation succeeded but returned incomplete data:", activation);
+                setErrorMessage("Student workspace was not returned correctly.");
                 return;
             }
 
             localStorage.setItem(
                 STORAGE_KEY,
                 JSON.stringify({
-                    classId: foundClass.id,
-                    studentSlotId: foundSlot.id,
-                    classCode: normalisedClassCode,
-                    studentCode: normalisedStudentCode,
+                    classId: activation.classId,
+                    studentSlotId: activation.studentSlotId,
+                    classCode: activation.classCode ?? normalisedClassCode,
+                    studentCode: activation.studentCode ?? normalisedStudentCode,
                 })
             );
 
@@ -163,6 +180,8 @@ function StudentAccess({
         } catch (error) {
             console.error("Student entry failed:", error);
             setErrorMessage("Could not access student workspace.");
+        } finally {
+            setIsSubmitting(false);
         }
     }
 
@@ -178,15 +197,20 @@ function StudentAccess({
                             value={classCode}
                             onChange={(event) => setClassCode(event.target.value)}
                             placeholder="Class code"
+                            autoCapitalize="characters"
                         />
 
                         <input
                             value={studentCode}
                             onChange={(event) => setStudentCode(event.target.value)}
                             placeholder="Student code"
+                            autoCapitalize="characters"
                         />
 
-                        <button onClick={handleStudentEntry}>Enter</button>
+                        <button onClick={handleStudentEntry} disabled={isSubmitting}>
+                            {isSubmitting ? "Checking..." : "Enter"}
+                        </button>
+
                         <button className="secondary" onClick={goBack}>
                             Back
                         </button>

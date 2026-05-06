@@ -22,7 +22,10 @@ const schema = a
             })
             .authorization((allow) => [
                 allow.owner(),
-                allow.guest().to(["read"]),
+
+                // The activate-student Lambda may read classes when checking a code.
+                // Students/guests should NOT be able to list classes directly.
+                allow.resource(activateStudent).to(["read"]),
             ]),
 
         StudentSlot: a
@@ -36,7 +39,10 @@ const schema = a
             })
             .authorization((allow) => [
                 allow.owner(),
-                allow.guest().to(["read"]),
+
+                // The activate-student Lambda may read slots when checking a code.
+                // Students/guests should NOT be able to list student slots directly.
+                allow.resource(activateStudent).to(["read"]),
             ]),
 
         ActivateStudentResponse: a.customType({
