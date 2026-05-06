@@ -43,8 +43,7 @@ type ClientModels = {
     };
 };
 
-const client = generateClient();
-const models = client.models as unknown as ClientModels;
+
 
 function makeClassCode() {
     return Math.random().toString(36).slice(2, 8).toUpperCase();
@@ -55,6 +54,12 @@ function makeStudentCode() {
 }
 
 function TeacherDashboard({ signOut, user }: TeacherDashboardProps) {
+    const client = useMemo(() => generateClient(), []);
+    const models = useMemo(
+        () => client.models as unknown as ClientModels,
+        [client]
+    );
+
     const [classes, setClasses] = useState<ClassRecord[]>([]);
     const [studentSlots, setStudentSlots] = useState<StudentSlotRecord[]>([]);
     const [selectedClassId, setSelectedClassId] = useState<string | null>(null);
@@ -69,11 +74,21 @@ function TeacherDashboard({ signOut, user }: TeacherDashboardProps) {
         [user]
     );
 
+    const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
     async function loadClasses() {
         setIsLoading(true);
-        const result = await models.Class.list({});
-        setClasses(result.data ?? []);
-        setIsLoading(false);
+        setErrorMessage(null);
+
+        try {
+            const result = await models.Class.list({});
+            setClasses(result.data ?? []);
+        } catch (error) {
+            console.error("Failed to load classes:", error);
+            setErrorMessage("Could not load classes. Check browser console.");
+        } finally {
+            setIsLoading(false);
+        }
     }
 
     async function loadStudentSlots(classId: string) {
@@ -123,7 +138,8 @@ function TeacherDashboard({ signOut, user }: TeacherDashboardProps) {
     }
 
     useEffect(() => {
-        loadClasses();
+        void loadClasses();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     return (
@@ -166,7 +182,7 @@ function TeacherDashboard({ signOut, user }: TeacherDashboardProps) {
 
                 <div className="card wide-card">
                     <h2>Your classes</h2>
-
+                    {errorMessage && <p className="error-text">{errorMessage}</p>}
                     {isLoading ? (
                         <p>Loading...</p>
                     ) : classes.length === 0 ? (
