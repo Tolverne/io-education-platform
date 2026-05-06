@@ -103,6 +103,12 @@ function StudentAccess({
                 authMode: "identityPool",
             });
 
+            console.log("Guest class lookup result:", classResult);
+            console.log(
+                "Visible class codes:",
+                (classResult.data ?? []).map((klass) => klass.classCode)
+            );
+
             const foundClass = (classResult.data ?? []).find(
                 (klass) => klass.classCode === normalisedClassCode
             );
