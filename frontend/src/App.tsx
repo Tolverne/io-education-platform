@@ -9,12 +9,28 @@ function makeClassCode() {
     return Math.random().toString(36).slice(2, 8).toUpperCase();
 }
 
+async function loadStudentSlots(classId: string) {
+    setSelectedClassId(classId);
+
+    const result = await client.models.StudentSlot.list({
+        filter: {
+            classId: {
+                eq: classId,
+            },
+        },
+    });
+
+    setStudentSlots(result.data);
+}
+
 function TeacherDashboard({ signOut, user }: any) {
     const [classes, setClasses] = useState<any[]>([]);
     const [className, setClassName] = useState("");
     const [subject, setSubject] = useState("IB Mathematics AA");
     const [yearLevel, setYearLevel] = useState("Year 11");
     const [isLoading, setIsLoading] = useState(false);
+    const [selectedClassId, setSelectedClassId] = useState<string | null>(null);
+    const [studentSlots, setStudentSlots] = useState<any[]>([]);
 
     const email = useMemo(
         () => user?.signInDetails?.loginId ?? user?.username ?? "",
@@ -31,27 +47,28 @@ function TeacherDashboard({ signOut, user }: any) {
     async function createClass() {
         if (!className.trim()) return;
 
+        const classCode = makeClassCode();
+
         const newClass = await client.models.Class.create({
             name: className.trim(),
             subject,
             yearLevel,
             studentLimit: 30,
-            classCode: makeClassCode(),
+            classCode,
             createdAtIso: new Date().toISOString(),
         });
 
         const classId = newClass.data?.id;
 
         if (classId) {
-            const slots = Array.from({ length: 30 }).map((_, i) => ({
-                classId,
-                studentCode: Math.random().toString(36).slice(2, 10),
-                label: `Student ${i + 1}`,
-                createdAtIso: new Date().toISOString(),
-            }));
-
-            for (const slot of slots) {
-                await client.models.StudentSlot.create(slot);
+            for (let i = 0; i < 30; i++) {
+                await client.models.StudentSlot.create({
+                    classId,
+                    studentCode: Math.random().toString(36).slice(2, 10).toUpperCase(),
+                    label: `Student ${i + 1}`,
+                    revoked: false,
+                    createdAtIso: new Date().toISOString(),
+                });
             }
         }
 
@@ -118,11 +135,37 @@ function TeacherDashboard({ signOut, user }: any) {
                                             {klass.subject} · {klass.yearLevel}
                                         </p>
                                     </div>
-                                    <code>{klass.classCode}</code>
+
+                                    <div className="row-actions">
+                                        <code>{klass.classCode}</code>
+                                        <button onClick={() => loadStudentSlots(klass.id)}>View students</button>
+                                    </div>
                                 </div>
                             ))}
+                         </div>
+
+
+                    )}
+
+                    {selectedClassId && (
+                        <div className="card wide-card">
+                            <h2>Anonymous student slots</h2>
+                            <p>
+                                These are anonymous IDs. Do not store student names or emails online.
+                            </p>
+
+                            <div className="student-grid">
+                                {studentSlots.map((slot) => (
+                                    <div className="student-card" key={slot.id}>
+                                        <strong>{slot.label}</strong>
+                                        <p>Student code</p>
+                                        <code>{slot.studentCode}</code>
+                                    </div>
+                                ))}
+                            </div>
                         </div>
                     )}
+
                 </div>
             </section>
         </main>

@@ -227,3 +227,30 @@ code {
     border-radius: 8px;
     font-weight: 700;
 }
+
+.row-actions {
+    display: flex;
+    gap: 0.75rem;
+    align-items: center;
+}
+
+.student-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+.student-card {
+    border: 1px solid #e2e8f0;
+    border-radius: 14px;
+    padding: 1rem;
+    background: #f8fafc;
+    text-align: left;
+}
+
+    .student-card p {
+        margin: 0.5rem 0 0.25rem;
+        color: #64748b;
+        font-size: 0.9rem;
+    }
