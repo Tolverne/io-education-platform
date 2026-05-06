@@ -322,7 +322,79 @@
         }
       },
       "enums": {},
-      "nonModels": {}
+      "nonModels": {
+        "ActivateStudentResponse": {
+          "name": "ActivateStudentResponse",
+          "fields": {
+            "success": {
+              "name": "success",
+              "isArray": false,
+              "type": "Boolean",
+              "isRequired": false,
+              "attributes": []
+            },
+            "message": {
+              "name": "message",
+              "isArray": false,
+              "type": "String",
+              "isRequired": false,
+              "attributes": []
+            },
+            "classId": {
+              "name": "classId",
+              "isArray": false,
+              "type": "String",
+              "isRequired": false,
+              "attributes": []
+            },
+            "studentSlotId": {
+              "name": "studentSlotId",
+              "isArray": false,
+              "type": "String",
+              "isRequired": false,
+              "attributes": []
+            },
+            "classCode": {
+              "name": "classCode",
+              "isArray": false,
+              "type": "String",
+              "isRequired": false,
+              "attributes": []
+            },
+            "studentCode": {
+              "name": "studentCode",
+              "isArray": false,
+              "type": "String",
+              "isRequired": false,
+              "attributes": []
+            }
+          }
+        }
+      },
+      "queries": {
+        "activateStudent": {
+          "name": "activateStudent",
+          "isArray": false,
+          "type": {
+            "nonModel": "ActivateStudentResponse"
+          },
+          "isRequired": false,
+          "arguments": {
+            "classCode": {
+              "name": "classCode",
+              "isArray": false,
+              "type": "String",
+              "isRequired": true
+            },
+            "studentCode": {
+              "name": "studentCode",
+              "isArray": false,
+              "type": "String",
+              "isRequired": true
+            }
+          }
+        }
+      }
     }
   },
   "version": "1.4"
