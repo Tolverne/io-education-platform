@@ -3,6 +3,7 @@ import { Authenticator } from "@aws-amplify/ui-react";
 import type { AuthUser } from "aws-amplify/auth";
 import { generateClient } from "aws-amplify/data";
 import "./App.css";
+import StudentWorkbook from "./components/StudentWorkbook";
 
 type Mode = "landing" | "teacher" | "student";
 
@@ -73,6 +74,30 @@ function Landing({ setMode }: { setMode: (mode: Mode) => void }) {
     );
 }
 
+type ActivateStudentResponse = {
+    success?: boolean | null;
+    message?: string | null;
+    classId?: string | null;
+    studentSlotId?: string | null;
+    classCode?: string | null;
+    studentCode?: string | null;
+};
+
+type StudentActivationQueries = {
+    activateStudent: (
+        input: {
+            classCode: string;
+            studentCode: string;
+        },
+        options?: {
+            authMode?: "identityPool";
+        }
+    ) => Promise<{
+        data?: ActivateStudentResponse | null;
+        errors?: unknown;
+    }>;
+};
+
 function StudentAccess({
     onSuccess,
     goBack,
@@ -81,8 +106,8 @@ function StudentAccess({
     goBack: () => void;
 }) {
     const client = useMemo(() => generateClient(), []);
-    const models = useMemo(
-        () => client.models as unknown as ClientModels,
+    const queries = useMemo(
+        () => client.queries as unknown as StudentActivationQueries,
         [client]
     );
 
@@ -97,40 +122,30 @@ function StudentAccess({
         const normalisedStudentCode = studentCode.trim().toUpperCase();
 
         try {
-            const classResult = await models.Class.list({});
-            const foundClass = (classResult.data ?? []).find(
-                (klass) => klass.classCode === normalisedClassCode
-            );
-
-            if (!foundClass) {
-                setErrorMessage("Invalid class code.");
-                return;
-            }
-
-            const slotResult = await models.StudentSlot.list({
-                filter: {
-                    classId: {
-                        eq: foundClass.id,
-                    },
+            const result = await queries.activateStudent(
+                {
+                    classCode: normalisedClassCode,
+                    studentCode: normalisedStudentCode,
                 },
-            });
-
-            const foundSlot = (slotResult.data ?? []).find(
-                (slot) => slot.studentCode === normalisedStudentCode
+                {
+                    authMode: "identityPool",
+                }
             );
 
-            if (!foundSlot) {
-                setErrorMessage("Invalid student code.");
+            const activation = result.data;
+
+            if (!activation?.success || !activation.classId || !activation.studentSlotId) {
+                setErrorMessage(activation?.message ?? "Invalid student access code.");
                 return;
             }
 
             localStorage.setItem(
                 STORAGE_KEY,
                 JSON.stringify({
-                    classId: foundClass.id,
-                    studentSlotId: foundSlot.id,
-                    classCode: normalisedClassCode,
-                    studentCode: normalisedStudentCode,
+                    classId: activation.classId,
+                    studentSlotId: activation.studentSlotId,
+                    classCode: activation.classCode,
+                    studentCode: activation.studentCode,
                 })
             );
 
@@ -175,19 +190,42 @@ function StudentAccess({
 }
 
 function StudentDashboard({ logout }: { logout: () => void }) {
-    const session = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}") as {
+    const [openWorkbook, setOpenWorkbook] = useState(false);
+
+    const session = JSON.parse(
+        localStorage.getItem(STORAGE_KEY) || "{}"
+    ) as {
         classCode?: string;
         studentCode?: string;
     };
+
+    if (openWorkbook) {
+        return (
+            <StudentWorkbook
+                classCode={session.classCode ?? ""}
+                studentCode={session.studentCode ?? ""}
+            />
+        );
+    }
 
     return (
         <main className="app-shell">
             <section className="hero">
                 <div className="card wide-card">
                     <h1>Student workspace</h1>
+
                     <p>Class code: {session.classCode}</p>
                     <p>Student code: {session.studentCode}</p>
-                    <button onClick={logout}>Leave student workspace</button>
+
+                    <div className="actions">
+                        <button onClick={() => setOpenWorkbook(true)}>
+                            Open workbook
+                        </button>
+
+                        <button onClick={logout}>
+                            Leave student workspace
+                        </button>
+                    </div>
                 </div>
             </section>
         </main>
