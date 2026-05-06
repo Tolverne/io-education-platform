@@ -182,3 +182,48 @@
     border-right-color: var(--border);
   }
 }
+
+.wide-card {
+    max-width: 760px;
+}
+
+.form-grid {
+    display: grid;
+    gap: 0.75rem;
+}
+
+input {
+    border: 1px solid #cbd5e1;
+    border-radius: 12px;
+    padding: 0.85rem 1rem;
+    font: inherit;
+}
+
+.class-list {
+    display: grid;
+    gap: 0.75rem;
+    text-align: left;
+}
+
+.class-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    align-items: center;
+    border: 1px solid #e2e8f0;
+    border-radius: 14px;
+    padding: 1rem;
+    background: #f8fafc;
+}
+
+    .class-row p {
+        margin: 0.25rem 0 0;
+        color: #64748b;
+    }
+
+code {
+    background: #e0f2fe;
+    padding: 0.4rem 0.6rem;
+    border-radius: 8px;
+    font-weight: 700;
+}
