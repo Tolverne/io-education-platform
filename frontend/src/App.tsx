@@ -4,6 +4,8 @@ import type { AuthUser } from "aws-amplify/auth";
 import { generateClient } from "aws-amplify/data";
 import "./App.css";
 
+type Mode = "landing" | "teacher" | "student";
+
 type TeacherDashboardProps = {
     signOut?: () => void;
     user?: AuthUser;
@@ -43,7 +45,7 @@ type ClientModels = {
     };
 };
 
-
+const STORAGE_KEY = "io_student_session";
 
 function makeClassCode() {
     return Math.random().toString(36).slice(2, 8).toUpperCase();
@@ -51,6 +53,145 @@ function makeClassCode() {
 
 function makeStudentCode() {
     return Math.random().toString(36).slice(2, 10).toUpperCase();
+}
+
+function Landing({ setMode }: { setMode: (mode: Mode) => void }) {
+    return (
+        <main className="app-shell">
+            <section className="hero">
+                <h1>IO Education</h1>
+                <p>Stylus-first digital workbooks for teachers and students.</p>
+
+                <div className="actions">
+                    <button onClick={() => setMode("teacher")}>I am a teacher</button>
+                    <button className="secondary" onClick={() => setMode("student")}>
+                        I am a student
+                    </button>
+                </div>
+            </section>
+        </main>
+    );
+}
+
+function StudentAccess({
+    onSuccess,
+    goBack,
+}: {
+    onSuccess: () => void;
+    goBack: () => void;
+}) {
+    const client = useMemo(() => generateClient(), []);
+    const models = useMemo(
+        () => client.models as unknown as ClientModels,
+        [client]
+    );
+
+    const [classCode, setClassCode] = useState("");
+    const [studentCode, setStudentCode] = useState("");
+    const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+    async function handleStudentEntry() {
+        setErrorMessage(null);
+
+        const normalisedClassCode = classCode.trim().toUpperCase();
+        const normalisedStudentCode = studentCode.trim().toUpperCase();
+
+        try {
+            const classResult = await models.Class.list({});
+            const foundClass = (classResult.data ?? []).find(
+                (klass) => klass.classCode === normalisedClassCode
+            );
+
+            if (!foundClass) {
+                setErrorMessage("Invalid class code.");
+                return;
+            }
+
+            const slotResult = await models.StudentSlot.list({
+                filter: {
+                    classId: {
+                        eq: foundClass.id,
+                    },
+                },
+            });
+
+            const foundSlot = (slotResult.data ?? []).find(
+                (slot) => slot.studentCode === normalisedStudentCode
+            );
+
+            if (!foundSlot) {
+                setErrorMessage("Invalid student code.");
+                return;
+            }
+
+            localStorage.setItem(
+                STORAGE_KEY,
+                JSON.stringify({
+                    classId: foundClass.id,
+                    studentSlotId: foundSlot.id,
+                    classCode: normalisedClassCode,
+                    studentCode: normalisedStudentCode,
+                })
+            );
+
+            onSuccess();
+        } catch (error) {
+            console.error("Student entry failed:", error);
+            setErrorMessage("Could not access student workspace.");
+        }
+    }
+
+    return (
+        <main className="app-shell">
+            <section className="hero">
+                <div className="card wide-card">
+                    <h1>Student access</h1>
+                    <p>Enter the class code and student code given by your teacher.</p>
+
+                    <div className="form-grid">
+                        <input
+                            value={classCode}
+                            onChange={(event) => setClassCode(event.target.value)}
+                            placeholder="Class code"
+                        />
+
+                        <input
+                            value={studentCode}
+                            onChange={(event) => setStudentCode(event.target.value)}
+                            placeholder="Student code"
+                        />
+
+                        <button onClick={handleStudentEntry}>Enter</button>
+                        <button className="secondary" onClick={goBack}>
+                            Back
+                        </button>
+                    </div>
+
+                    {errorMessage && <p className="error-text">{errorMessage}</p>}
+                </div>
+            </section>
+        </main>
+    );
+}
+
+function StudentDashboard({ logout }: { logout: () => void }) {
+    const session = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}") as {
+        classCode?: string;
+        studentCode?: string;
+    };
+
+    return (
+        <main className="app-shell">
+            <section className="hero">
+                <div className="card wide-card">
+                    <h1>Student workspace</h1>
+                    <p>Class code: {session.classCode}</p>
+                    <p>Student code: {session.studentCode}</p>
+                    <button onClick={logout}>Leave student workspace</button>
+                </div>
+            </section>
+        </main>
+    );
 }
 
 function TeacherDashboard({ signOut, user }: TeacherDashboardProps) {
@@ -68,13 +209,12 @@ function TeacherDashboard({ signOut, user }: TeacherDashboardProps) {
     const [subject, setSubject] = useState("IB Mathematics AA");
     const [yearLevel, setYearLevel] = useState("Year 11");
     const [isLoading, setIsLoading] = useState(false);
+    const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
     const email = useMemo(
         () => user?.signInDetails?.loginId ?? user?.username ?? "",
         [user]
     );
-
-    const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
     async function loadClasses() {
         setIsLoading(true);
@@ -85,7 +225,7 @@ function TeacherDashboard({ signOut, user }: TeacherDashboardProps) {
             setClasses(result.data ?? []);
         } catch (error) {
             console.error("Failed to load classes:", error);
-            setErrorMessage("Could not load classes. Check browser console.");
+            setErrorMessage("Could not load classes.");
         } finally {
             setIsLoading(false);
         }
@@ -108,14 +248,12 @@ function TeacherDashboard({ signOut, user }: TeacherDashboardProps) {
     async function createClass() {
         if (!className.trim()) return;
 
-        const classCode = makeClassCode();
-
         const newClass = await models.Class.create({
             name: className.trim(),
             subject,
             yearLevel,
             studentLimit: 30,
-            classCode,
+            classCode: makeClassCode(),
             createdAtIso: new Date().toISOString(),
         });
 
@@ -160,19 +298,19 @@ function TeacherDashboard({ signOut, user }: TeacherDashboardProps) {
                     <div className="form-grid">
                         <input
                             value={className}
-                            onChange={(e) => setClassName(e.target.value)}
+                            onChange={(event) => setClassName(event.target.value)}
                             placeholder="Class name, e.g. AA SL Period 3"
                         />
 
                         <input
                             value={subject}
-                            onChange={(e) => setSubject(e.target.value)}
+                            onChange={(event) => setSubject(event.target.value)}
                             placeholder="Subject"
                         />
 
                         <input
                             value={yearLevel}
-                            onChange={(e) => setYearLevel(e.target.value)}
+                            onChange={(event) => setYearLevel(event.target.value)}
                             placeholder="Year level"
                         />
 
@@ -182,7 +320,9 @@ function TeacherDashboard({ signOut, user }: TeacherDashboardProps) {
 
                 <div className="card wide-card">
                     <h2>Your classes</h2>
+
                     {errorMessage && <p className="error-text">{errorMessage}</p>}
+
                     {isLoading ? (
                         <p>Loading...</p>
                     ) : classes.length === 0 ? (
@@ -235,11 +375,50 @@ function TeacherDashboard({ signOut, user }: TeacherDashboardProps) {
 }
 
 export default function App() {
-    return (
-        <Authenticator>
-            {({ signOut, user }) => (
-                <TeacherDashboard signOut={signOut} user={user} />
-            )}
-        </Authenticator>
-    );
+    const [mode, setMode] = useState<Mode>("landing");
+    const [studentActive, setStudentActive] = useState(false);
+
+    useEffect(() => {
+        if (localStorage.getItem(STORAGE_KEY)) {
+            setMode("student");
+            setStudentActive(true);
+        }
+    }, []);
+
+    if (mode === "landing") {
+        return <Landing setMode={setMode} />;
+    }
+
+    if (mode === "teacher") {
+        return (
+            <Authenticator>
+                {({ signOut, user }) => (
+                    <TeacherDashboard signOut={signOut} user={user} />
+                )}
+            </Authenticator>
+        );
+    }
+
+    if (mode === "student") {
+        if (!studentActive) {
+            return (
+                <StudentAccess
+                    onSuccess={() => setStudentActive(true)}
+                    goBack={() => setMode("landing")}
+                />
+            );
+        }
+
+        return (
+            <StudentDashboard
+                logout={() => {
+                    localStorage.removeItem(STORAGE_KEY);
+                    setStudentActive(false);
+                    setMode("landing");
+                }}
+            />
+        );
+    }
+
+    return null;
 }
