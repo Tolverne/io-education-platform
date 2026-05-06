@@ -82,7 +82,14 @@ function StudentAccess({
     onSuccess: () => void;
     goBack: () => void;
 }) {
-    const client = useMemo(() => generateClient(), []);
+    const client = useMemo(
+        () =>
+            generateClient({
+                authMode: "identityPool",
+            }),
+        []
+    );
+
     const models = useMemo(
         () => client.models as unknown as ClientModels,
         [client]
@@ -126,6 +133,12 @@ function StudentAccess({
                 },
                 authMode: "identityPool",
             });
+
+            console.log("Guest student slot lookup result:", slotResult);
+            console.log(
+                "Visible student codes:",
+                (slotResult.data ?? []).map((slot) => slot.studentCode)
+            );
 
             const foundSlot = (slotResult.data ?? []).find(
                 (slot) => slot.studentCode === normalisedStudentCode
