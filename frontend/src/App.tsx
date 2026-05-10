@@ -91,15 +91,11 @@ type ActivateStudentResult = {
 
 type StudentActivationClient = {
     queries: {
-        activateStudent: (
-            input: {
-                classCode: string;
-                studentCode: string;
-            },
-            options?: {
-                authMode?: "identityPool";
-            }
-        ) => Promise<ActivateStudentResult>;
+        activateStudent: (input: {
+            classCode: string;
+            studentCode: string;
+            authMode?: "identityPool";
+        }) => Promise<ActivateStudentResult>;
     };
 };
 
@@ -137,15 +133,11 @@ function StudentAccess({
         setIsSubmitting(true);
 
         try {
-            const result = await client.queries.activateStudent(
-                {
-                    classCode: normalisedClassCode,
-                    studentCode: normalisedStudentCode,
-                },
-                {
-                    authMode: "identityPool",
-                }
-            );
+            const result = await client.queries.activateStudent({
+                classCode: normalisedClassCode,
+                studentCode: normalisedStudentCode,
+                authMode: "identityPool",
+            });
 
             if (result.errors && result.errors.length > 0) {
                 console.error("Student activation errors:", result.errors);

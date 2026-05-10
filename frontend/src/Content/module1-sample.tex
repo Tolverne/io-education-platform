@@ -1,38 +1,4 @@
-export type WorkbookVersionId = string;
-export type ChapterId = string;
-export type GridspaceId = string;
 
-export type LatexBlock = {
-    type: "latex";
-    id: string;
-    content: string;
-};
-
-export type GridspaceBlock = {
-    type: "gridspace";
-    id: string;
-    gridspaceId: GridspaceId;
-    heightCm: number;
-};
-
-export type WorkbookBlock = LatexBlock | GridspaceBlock;
-
-export type WorkbookChapter = {
-    workbookVersionId: WorkbookVersionId;
-    chapterId: ChapterId;
-    title: string;
-    blocks: WorkbookBlock[];
-};
-
-export const sampleChapter: WorkbookChapter = {
-    workbookVersionId: "ib-aa-sl-number-algebra-module-1-v1",
-    chapterId: "number-algebra-module-1-sequences-logs",
-    title: "Number and Algebra Module 1: Sequences, Logarithms and Algebraic Reasoning",
-    blocks: [
-        {
-            type: "latex",
-            id: "intro-core-ideas",
-            content: String.raw`
 \chapter{Number and Algebra Module 1: Sequences, Logarithms and Algebraic Reasoning}
 
 \begin{syllabusbox}
@@ -211,18 +177,13 @@ which gives
 }
 \end{workedexam}
 
+
 \section{Practice Questions}
 
 \begin{practicebox}[title=Practice Set A: Arithmetic sequences]
 These questions are designed for Paper 1. Do not use a calculator unless your teacher instructs you to do so.
 \end{practicebox}
-`,
-        },
 
-        {
-            type: "latex",
-            id: "practice-a-q1",
-            content: String.raw`
 \begin{examquestion}[6 marks]
 The second term of an arithmetic sequence is $31$ and the sixth term is $7$.
 \begin{enumerate}[label=(\alph*)]
@@ -230,92 +191,27 @@ The second term of an arithmetic sequence is $31$ and the sixth term is $7$.
     \item Find the first term.
     \item Find the eleventh term.
 \end{enumerate}
-`,
-        },
-        {
-            type: "gridspace",
-            id: "practice-a-q1-gridspace",
-            gridspaceId: "m1-practice-a-q1",
-            heightCm: 7,
-        },
-        {
-            type: "latex",
-            id: "practice-a-q1-end",
-            content: String.raw`
+\gridspace[7cm]{m1-arithmetic-sequences-q1}
 \end{examquestion}
-`,
-        },
 
-        {
-            type: "latex",
-            id: "practice-a-q2",
-            content: String.raw`
 \begin{examquestion}[5 marks]
 The fourth term of an arithmetic sequence is $18$ and the tenth term is $-6$.
 \begin{enumerate}[label=(\alph*)]
     \item Find $u_1$ and $d$.
     \item Find the value of $n$ for which $u_n=-30$.
 \end{enumerate}
-`,
-        },
-        {
-            type: "gridspace",
-            id: "practice-a-q2-gridspace",
-            gridspaceId: "m1-practice-a-q2",
-            heightCm: 7,
-        },
-        {
-            type: "latex",
-            id: "practice-a-q2-end",
-            content: String.raw`
+\gridspace[7cm]{m1-arithmetic-sequences-q2}
 \end{examquestion}
-`,
-        },
 
-        {
-            type: "latex",
-            id: "practice-a-q3",
-            content: String.raw`
 \begin{examquestion}[6 marks]
 For an arithmetic sequence, $u_8=22$ and $S_{15}=270$.
 Find the value of $k$ such that $u_k=0$.
-`,
-        },
-        {
-            type: "gridspace",
-            id: "practice-a-q3-gridspace",
-            gridspaceId: "m1-practice-a-q3",
-            heightCm: 8,
-        },
-        {
-            type: "latex",
-            id: "practice-a-q3-end",
-            content: String.raw`
+\gridspace[8cm]{m1-arithmetic-sequences-q3}
 \end{examquestion}
-`,
-        },
 
-        {
-            type: "latex",
-            id: "practice-a-q4",
-            content: String.raw`
 \begin{examquestion}[6 marks]
 For an arithmetic sequence, $u_6=35$ and $S_{20}=250$.
 Find the first term and the common difference.
-`,
-        },
-        {
-            type: "gridspace",
-            id: "practice-a-q4-gridspace",
-            gridspaceId: "m1-practice-a-q4",
-            heightCm: 8,
-        },
-        {
-            type: "latex",
-            id: "practice-a-q4-end",
-            content: String.raw`
+\gridspace[8cm]{m1-arithmetic-sequences-q4}
 \end{examquestion}
-`,
-        },
-    ],
-};
+

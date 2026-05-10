@@ -1,6 +1,10 @@
+import { useMemo } from "react";
 import GridspaceCanvas from "./GridspaceCanvas";
-import { sampleChapter } from "../data/sampleChapter";
-import type { WorkbookBlock } from "../data/sampleChapter";
+import chapterTex from "../content/module1-sample.tex?raw";
+import {
+    parseLatexChapter,
+    type ParsedWorkbookBlock,
+} from "../lib/latexWorkbookParser";
 
 type StudentWorkbookProps = {
     classId: string;
@@ -30,7 +34,7 @@ function makeGridspaceStorageKey(params: {
 function LatexBlockView({ content }: { content: string }) {
     return (
         <div className="latex-block">
-            <pre>{content.trim()}</pre>
+            <pre>{content}</pre>
         </div>
     );
 }
@@ -38,9 +42,13 @@ function LatexBlockView({ content }: { content: string }) {
 function WorkbookBlockView({
     block,
     studentSlotId,
+    workbookVersionId,
+    chapterId,
 }: {
-    block: WorkbookBlock;
+    block: ParsedWorkbookBlock;
     studentSlotId: string;
+    workbookVersionId: string;
+    chapterId: string;
 }) {
     if (block.type === "latex") {
         return <LatexBlockView content={block.content} />;
@@ -48,8 +56,8 @@ function WorkbookBlockView({
 
     const storageKey = makeGridspaceStorageKey({
         studentSlotId,
-        workbookVersionId: sampleChapter.workbookVersionId,
-        chapterId: sampleChapter.chapterId,
+        workbookVersionId,
+        chapterId,
         gridspaceId: block.gridspaceId,
     });
 
@@ -74,6 +82,17 @@ export default function StudentWorkbook({
     classCode,
     studentCode,
 }: StudentWorkbookProps) {
+    const chapter = useMemo(
+        () =>
+            parseLatexChapter(chapterTex, {
+                workbookVersionId: "ib-aa-sl-number-algebra-module-1-v1",
+                chapterId: "number-algebra-module-1-sequences-logs",
+                fallbackTitle:
+                    "Number and Algebra Module 1: Sequences, Logarithms and Algebraic Reasoning",
+            }),
+        []
+    );
+
     return (
         <main className="app-shell">
             <section className="hero">
@@ -87,7 +106,7 @@ export default function StudentWorkbook({
                         Back to student workspace
                     </button>
 
-                    <h1>{sampleChapter.title}</h1>
+                    <h1>{chapter.title}</h1>
 
                     <div className="student-session-summary">
                         <p>
@@ -105,11 +124,13 @@ export default function StudentWorkbook({
                     </div>
 
                     <div className="workbook-content">
-                        {sampleChapter.blocks.map((block) => (
+                        {chapter.blocks.map((block) => (
                             <WorkbookBlockView
                                 key={block.id}
                                 block={block}
                                 studentSlotId={studentSlotId}
+                                workbookVersionId={chapter.workbookVersionId}
+                                chapterId={chapter.chapterId}
                             />
                         ))}
                     </div>

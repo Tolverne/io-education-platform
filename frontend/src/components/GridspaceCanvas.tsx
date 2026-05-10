@@ -12,14 +12,16 @@ type GridspaceCanvasProps = {
     height?: string;
 };
 
+type SketchCanvasPaths = Parameters<ReactSketchCanvasRef["loadPaths"]>[0];
+
 export default function GridspaceCanvas({
     storageKey,
     height = "400px",
 }: GridspaceCanvasProps) {
     const canvasRef = useRef<ReactSketchCanvasRef>(null);
-    const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved" | "error">(
-        "idle"
-    );
+    const [saveStatus, setSaveStatus] = useState<
+        "idle" | "saving" | "saved" | "error"
+    >("idle");
 
     async function saveCanvas() {
         if (!canvasRef.current) return;
@@ -44,7 +46,7 @@ export default function GridspaceCanvas({
 
             if (!saved) return;
 
-            await canvasRef.current.loadPaths(saved.paths);
+            await canvasRef.current.loadPaths(saved.paths as SketchCanvasPaths);
             setSaveStatus("saved");
         } catch (error) {
             console.error("Failed to load canvas", error);
@@ -56,6 +58,27 @@ export default function GridspaceCanvas({
         void loadCanvas();
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [storageKey]);
+
+    function handleUndo() {
+        void canvasRef.current?.undo();
+
+        window.setTimeout(() => {
+            void saveCanvas();
+        }, 50);
+    }
+
+    function handleClear() {
+        void canvasRef.current?.clearCanvas();
+
+        deleteGridspaceSnapshot(storageKey)
+            .then(() => {
+                setSaveStatus("idle");
+            })
+            .catch((error: unknown) => {
+                console.error("Failed to delete canvas snapshot", error);
+                setSaveStatus("error");
+            });
+    }
 
     return (
         <div className="gridspace-wrapper">
@@ -76,31 +99,9 @@ export default function GridspaceCanvas({
             />
 
             <div className="canvas-actions">
-                <button
-                    onClick={() => {
-                        void canvasRef.current?.undo();
-                        window.setTimeout(() => {
-                            void saveCanvas();
-                        }, 50);
-                    }}
-                >
-                    Undo
-                </button>
+                <button onClick={handleUndo}>Undo</button>
 
-                <button
-                    onClick={() => {
-                        void canvasRef.current?.clearCanvas();
-
-                        deleteGridspaceSnapshot(storageKey).catch((error: unknown) => {
-                            console.error("Failed to delete canvas snapshot", error);
-                            setSaveStatus("error");
-                        });
-
-                        setSaveStatus("idle");
-                    }}
-                >
-                    Clear
-                </button>
+                <button onClick={handleClear}>Clear</button>
 
                 <span className="save-status">
                     {saveStatus === "saving" && "Saving..."}
