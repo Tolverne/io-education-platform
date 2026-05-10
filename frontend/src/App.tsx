@@ -229,6 +229,8 @@ function StudentDashboard({ logout }: { logout: () => void }) {
     const session = JSON.parse(
         localStorage.getItem(STORAGE_KEY) || "{}"
     ) as {
+        classId?: string;
+        studentSlotId?: string;
         classCode?: string;
         studentCode?: string;
     };
@@ -236,6 +238,8 @@ function StudentDashboard({ logout }: { logout: () => void }) {
     if (openWorkbook) {
         return (
             <StudentWorkbook
+                classId={session.classId ?? ""}
+                studentSlotId={session.studentSlotId ?? ""}
                 classCode={session.classCode ?? ""}
                 studentCode={session.studentCode ?? ""}
             />

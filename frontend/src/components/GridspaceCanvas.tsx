@@ -1,6 +1,11 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ReactSketchCanvas } from "react-sketch-canvas";
 import type { ReactSketchCanvasRef } from "react-sketch-canvas";
+import {
+    deleteGridspaceSnapshot,
+    loadGridspaceSnapshot,
+    saveGridspaceSnapshot,
+} from "../lib/gridspaceStorage";
 
 type GridspaceCanvasProps = {
     storageKey: string;
@@ -12,34 +17,45 @@ export default function GridspaceCanvas({
     height = "400px",
 }: GridspaceCanvasProps) {
     const canvasRef = useRef<ReactSketchCanvasRef>(null);
+    const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved" | "error">(
+        "idle"
+    );
 
     async function saveCanvas() {
         if (!canvasRef.current) return;
 
-        const paths = await canvasRef.current.exportPaths();
+        setSaveStatus("saving");
 
-        localStorage.setItem(storageKey, JSON.stringify(paths));
+        try {
+            const paths = await canvasRef.current.exportPaths();
+            await saveGridspaceSnapshot(storageKey, paths);
+            setSaveStatus("saved");
+        } catch (error) {
+            console.error("Failed to save canvas", error);
+            setSaveStatus("error");
+        }
     }
 
     async function loadCanvas() {
         if (!canvasRef.current) return;
 
-        const saved = localStorage.getItem(storageKey);
-
-        if (!saved) return;
-
         try {
-            const parsed = JSON.parse(saved);
+            const saved = await loadGridspaceSnapshot(storageKey);
 
-            await canvasRef.current.loadPaths(parsed);
-        } catch (err) {
-            console.error("Failed to load canvas", err);
+            if (!saved) return;
+
+            await canvasRef.current.loadPaths(saved.paths);
+            setSaveStatus("saved");
+        } catch (error) {
+            console.error("Failed to load canvas", error);
+            setSaveStatus("error");
         }
     }
 
     useEffect(() => {
         void loadCanvas();
-    }, []);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [storageKey]);
 
     return (
         <div className="gridspace-wrapper">
@@ -54,14 +70,18 @@ export default function GridspaceCanvas({
                 }}
                 width="100%"
                 height={height}
-                onStroke={saveCanvas}
+                onStroke={() => {
+                    void saveCanvas();
+                }}
             />
 
             <div className="canvas-actions">
                 <button
                     onClick={() => {
                         void canvasRef.current?.undo();
-                        setTimeout(saveCanvas, 50);
+                        window.setTimeout(() => {
+                            void saveCanvas();
+                        }, 50);
                     }}
                 >
                     Undo
@@ -70,11 +90,23 @@ export default function GridspaceCanvas({
                 <button
                     onClick={() => {
                         void canvasRef.current?.clearCanvas();
-                        localStorage.removeItem(storageKey);
+
+                        deleteGridspaceSnapshot(storageKey).catch((error: unknown) => {
+                            console.error("Failed to delete canvas snapshot", error);
+                            setSaveStatus("error");
+                        });
+
+                        setSaveStatus("idle");
                     }}
                 >
                     Clear
                 </button>
+
+                <span className="save-status">
+                    {saveStatus === "saving" && "Saving..."}
+                    {saveStatus === "saved" && "Saved locally"}
+                    {saveStatus === "error" && "Save error"}
+                </span>
             </div>
         </div>
     );
