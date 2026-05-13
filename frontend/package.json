@@ -12,8 +12,10 @@
   "dependencies": {
     "@aws-amplify/ui-react": "^6.15.3",
     "aws-amplify": "^6.17.0",
+    "katex": "^0.16.45",
     "react": "^19.2.5",
     "react-dom": "^19.2.5",
+    "react-katex": "^3.1.0",
     "react-sketch-canvas": "^6.2.0"
   },
   "devDependencies": {
