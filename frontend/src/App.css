@@ -366,3 +366,97 @@ input {
     .student-session-summary p {
         margin: 0.25rem 0;
     }
+
+.latex-renderer {
+    width: 100%;
+    text-align: left;
+}
+
+.latex-renderer-chapter {
+    font-size: 2rem;
+    line-height: 1.15;
+    margin: 0 0 1rem;
+}
+
+.latex-renderer-section {
+    font-size: 1.5rem;
+    margin: 2rem 0 0.75rem;
+    border-bottom: 1px solid #e2e8f0;
+    padding-bottom: 0.35rem;
+}
+
+.latex-renderer-subsection {
+    font-size: 1.2rem;
+    margin: 1.5rem 0 0.5rem;
+}
+
+.latex-renderer-paragraph {
+    font-size: 1rem;
+    line-height: 1.65;
+    margin: 0.75rem 0;
+}
+
+.latex-renderer-display-math {
+    overflow-x: auto;
+    padding: 0.75rem 0;
+    margin: 0.75rem 0;
+}
+
+.latex-renderer-list {
+    margin: 0.75rem 0 0.75rem 1.5rem;
+    line-height: 1.65;
+}
+
+    .latex-renderer-list li {
+        margin: 0.25rem 0;
+    }
+
+.latex-renderer-box {
+    border: 1px solid #cbd5e1;
+    border-radius: 16px;
+    padding: 1rem;
+    margin: 1rem 0;
+    background: #ffffff;
+}
+
+.latex-renderer-box-title {
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+}
+
+.latex-renderer-box.syllabusbox {
+    background: #f8fafc;
+}
+
+.latex-renderer-box.skillbox {
+    background: #f0f9ff;
+}
+
+.latex-renderer-box.examtipbox {
+    background: #fffbeb;
+}
+
+.latex-renderer-box.notebox {
+    background: #f8fafc;
+}
+
+.latex-renderer-box.practicebox {
+    background: #f5f3ff;
+}
+
+.latex-renderer-box.examquestion {
+    background: #ffffff;
+    border: 2px solid #cbd5e1;
+}
+
+.latex-renderer-box.workedexam {
+    background: #f0fdf4;
+}
+
+.latex-renderer-solution {
+    border-left: 4px solid #94a3b8;
+    padding-left: 1rem;
+    margin: 1rem 0;
+    background: #f8fafc;
+    border-radius: 8px;
+}

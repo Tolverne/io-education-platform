@@ -5,6 +5,7 @@ import {
     parseLatexChapter,
     type ParsedWorkbookBlock,
 } from "../lib/latexWorkbookParser";
+import LatexBlockRenderer from "./LatexBlockRenderer";
 
 type StudentWorkbookProps = {
     classId: string;
@@ -34,7 +35,7 @@ function makeGridspaceStorageKey(params: {
 function LatexBlockView({ content }: { content: string }) {
     return (
         <div className="latex-block">
-            <pre>{content}</pre>
+            <LatexBlockRenderer content={content} />
         </div>
     );
 }
