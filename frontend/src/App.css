@@ -460,3 +460,27 @@ input {
     background: #f8fafc;
     border-radius: 8px;
 }
+
+.student-workbook-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.sync-message {
+    text-align: left;
+    background: #ecfdf5;
+    border: 1px solid #bbf7d0;
+    color: #166534;
+    padding: 0.75rem 1rem;
+    border-radius: 12px;
+    margin: 0.75rem 0 1rem;
+}
+
+.sync-message-error {
+    background: #fef2f2;
+    border-color: #fecaca;
+    color: #991b1b;
+}

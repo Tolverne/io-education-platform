@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import GridspaceCanvas from "./GridspaceCanvas";
 import chapterTex from "../content/module1-sample.tex?raw";
 import {
@@ -6,6 +6,7 @@ import {
     type ParsedWorkbookBlock,
 } from "../lib/latexWorkbookParser";
 import LatexBlockRenderer from "./LatexBlockRenderer";
+import { syncStudentSnapshots } from "../lib/syncStudentSnapshots";
 
 type StudentWorkbookProps = {
     classId: string;
@@ -83,6 +84,12 @@ export default function StudentWorkbook({
     classCode,
     studentCode,
 }: StudentWorkbookProps) {
+    const [syncStatus, setSyncStatus] = useState<
+        "idle" | "syncing" | "success" | "error"
+    >("idle");
+
+    const [syncMessage, setSyncMessage] = useState<string | null>(null);
+
     const chapter = useMemo(
         () =>
             parseLatexChapter(chapterTex, {
@@ -94,18 +101,71 @@ export default function StudentWorkbook({
         []
     );
 
+    async function handleSyncWork() {
+        setSyncStatus("syncing");
+        setSyncMessage("Syncing local work...");
+
+        try {
+            const result = await syncStudentSnapshots({
+                classId,
+                studentSlotId,
+            });
+
+            if (result.failed > 0) {
+                setSyncStatus("error");
+                setSyncMessage(
+                    `Sync finished with errors. Uploaded ${result.uploaded}, failed ${result.failed}, skipped ${result.skipped}.`
+                );
+                return;
+            }
+
+            setSyncStatus("success");
+            setSyncMessage(
+                `Synced ${result.uploaded} gridspace snapshot${result.uploaded === 1 ? "" : "s"
+                }. Skipped ${result.skipped}.`
+            );
+        } catch (error) {
+            console.error("Sync failed:", error);
+            setSyncStatus("error");
+            setSyncMessage("Sync failed. Check the console for details.");
+        }
+    }
+
     return (
         <main className="app-shell">
             <section className="hero">
                 <div className="card wide-card">
-                    <button
-                        className="secondary"
-                        onClick={() => {
-                            window.location.reload();
-                        }}
-                    >
-                        Back to student workspace
-                    </button>
+                    <div className="student-workbook-actions">
+                        <button
+                            className="secondary"
+                            onClick={() => {
+                                window.location.reload();
+                            }}
+                        >
+                            Back to student workspace
+                        </button>
+
+                        <button
+                            onClick={() => {
+                                void handleSyncWork();
+                            }}
+                            disabled={syncStatus === "syncing"}
+                        >
+                            {syncStatus === "syncing" ? "Syncing..." : "Sync local work"}
+                        </button>
+                    </div>
+
+                    {syncMessage && (
+                        <p
+                            className={
+                                syncStatus === "error"
+                                    ? "sync-message sync-message-error"
+                                    : "sync-message"
+                            }
+                        >
+                            {syncMessage}
+                        </p>
+                    )}
 
                     <h1>{chapter.title}</h1>
 

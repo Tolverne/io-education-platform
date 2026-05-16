@@ -106,6 +106,34 @@ export async function loadGridspaceSnapshot(
     });
 }
 
+export async function listGridspaceSnapshots(): Promise<GridspaceSnapshot[]> {
+    const db = await openDatabase();
+
+    return new Promise((resolve, reject) => {
+        const transaction = db.transaction(GRIDSPACE_STORE, "readonly");
+        const store = transaction.objectStore(GRIDSPACE_STORE);
+
+        const request = store.getAll();
+
+        request.onsuccess = () => {
+            resolve((request.result ?? []) as GridspaceSnapshot[]);
+        };
+
+        request.onerror = () => {
+            reject(request.error);
+        };
+
+        transaction.oncomplete = () => {
+            db.close();
+        };
+
+        transaction.onerror = () => {
+            db.close();
+            reject(transaction.error);
+        };
+    });
+}
+
 export async function deleteGridspaceSnapshot(storageKey: string): Promise<void> {
     const db = await openDatabase();
 
