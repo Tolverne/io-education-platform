@@ -72,6 +72,14 @@ export async function syncStudentSnapshots({
         authMode: "identityPool",
     }) as unknown as SnapshotModelClient;
 
+    const snapshotModel = client.models.StudentGridspaceSnapshot;
+
+    if (!snapshotModel) {
+        throw new Error(
+            "StudentGridspaceSnapshot model is missing from the generated Amplify client. The backend schema or amplify_outputs.json is not up to date."
+        );
+    }
+
     const localSnapshots = await listGridspaceSnapshots();
 
     let uploaded = 0;
@@ -117,7 +125,7 @@ export async function syncStudentSnapshots({
         };
 
         try {
-            const existingResult = await client.models.StudentGridspaceSnapshot.list({
+            const existingResult = await snapshotModel.list({
                 filter: {
                     snapshotKey: {
                         eq: snapshotKey,
@@ -135,12 +143,12 @@ export async function syncStudentSnapshots({
             const existing = existingResult.data?.[0];
 
             const result = existing
-                ? await client.models.StudentGridspaceSnapshot.update({
+                ? await snapshotModel.update({
                     id: existing.id,
                     ...payload,
                     authMode: "identityPool",
                 })
-                : await client.models.StudentGridspaceSnapshot.create({
+                : await snapshotModel.create({
                     ...payload,
                     authMode: "identityPool",
                 });

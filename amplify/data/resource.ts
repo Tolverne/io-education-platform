@@ -1,5 +1,4 @@
 import { type ClientSchema, a, defineData } from "@aws-amplify/backend";
-import { activateStudent } from "../functions/activate-student/resource";
 
 const schema = a.schema({
     TeacherProfile: a
@@ -22,8 +21,9 @@ const schema = a.schema({
         .authorization((allow) => [
             allow.owner(),
 
-            // Temporary: allows student activation to work while we stabilise the app.
-            // Later we should replace this with a dedicated secure activation function.
+            // Prototype access only.
+            // This keeps student login working while the secure student
+            // activation service is rebuilt properly.
             allow.guest().to(["read"]),
         ]),
 
@@ -39,8 +39,8 @@ const schema = a.schema({
         .authorization((allow) => [
             allow.owner(),
 
-            // Temporary: allows student activation to work while we stabilise the app.
-            // Later we should replace this with a dedicated secure activation function.
+            // Prototype access only.
+            // Student slots remain anonymous: no names/emails online.
             allow.guest().to(["read"]),
         ]),
 
@@ -62,26 +62,12 @@ const schema = a.schema({
         })
         .authorization((allow) => [
             allow.owner(),
+
+            // Prototype access only.
+            // This lets anonymous student devices push synced work.
+            // Later this should be replaced by a secure sync function.
+            allow.guest().to(["create", "read", "update"]),
         ]),
-
-    ActivateStudentResponse: a.customType({
-        success: a.boolean(),
-        message: a.string(),
-        classId: a.string(),
-        studentSlotId: a.string(),
-        classCode: a.string(),
-        studentCode: a.string(),
-    }),
-
-    activateStudent: a
-        .query()
-        .arguments({
-            classCode: a.string().required(),
-            studentCode: a.string().required(),
-        })
-        .returns(a.ref("ActivateStudentResponse"))
-        .authorization((allow) => [allow.guest()])
-        .handler(a.handler.function(activateStudent)),
 });
 
 export type Schema = ClientSchema<typeof schema>;

@@ -25,6 +25,7 @@ type StudentSlotRecord = {
     classId?: string | null;
     studentCode?: string | null;
     label?: string | null;
+    revoked?: boolean | null;
 };
 
 type ModelResult<T> = {
@@ -39,10 +40,12 @@ type ClientModels = {
     Class: {
         list: (input?: object) => Promise<ListResult<ClassRecord>>;
         create: (input: object) => Promise<ModelResult<ClassRecord>>;
+        delete: (input: { id: string }) => Promise<ModelResult<ClassRecord>>;
     };
     StudentSlot: {
         list: (input?: object) => Promise<ListResult<StudentSlotRecord>>;
         create: (input: object) => Promise<ModelResult<StudentSlotRecord>>;
+        delete: (input: { id: string }) => Promise<ModelResult<StudentSlotRecord>>;
     };
 };
 
@@ -75,33 +78,7 @@ function Landing({ setMode }: { setMode: (mode: Mode) => void }) {
 }
 
 
-type ActivateStudentPayload = {
-    success?: boolean | null;
-    message?: string | null;
-    classId?: string | null;
-    studentSlotId?: string | null;
-    classCode?: string | null;
-    studentCode?: string | null;
-};
 
-type ActivateStudentResult = {
-    data?: ActivateStudentPayload | null;
-    errors?: Array<{ message?: string }> | null;
-};
-
-type StudentActivationClient = {
-    queries: {
-        activateStudent: (
-            input: {
-                classCode: string;
-                studentCode: string;
-            },
-            options?: {
-                authMode?: "identityPool";
-            }
-        ) => Promise<ActivateStudentResult>;
-    };
-};
 
 function StudentAccess({
     onSuccess,
@@ -114,8 +91,13 @@ function StudentAccess({
         () =>
             generateClient({
                 authMode: "identityPool",
-            }) as unknown as StudentActivationClient,
+            }),
         []
+    );
+
+    const models = useMemo(
+        () => client.models as unknown as ClientModels,
+        [client]
     );
 
     const [classCode, setClassCode] = useState("");
@@ -137,42 +119,49 @@ function StudentAccess({
         setIsSubmitting(true);
 
         try {
-            const result = await client.queries.activateStudent(
-                {
-                    classCode: normalisedClassCode,
-                    studentCode: normalisedStudentCode,
+            const classResult = await models.Class.list({
+                authMode: "identityPool",
+                filter: {
+                    classCode: {
+                        eq: normalisedClassCode,
+                    },
                 },
-                {
-                    authMode: "identityPool",
-                }
+            });
+
+            const foundClass = (classResult.data ?? [])[0];
+
+            if (!foundClass) {
+                setErrorMessage("Invalid class code.");
+                return;
+            }
+
+            const slotResult = await models.StudentSlot.list({
+                authMode: "identityPool",
+                filter: {
+                    classId: {
+                        eq: foundClass.id,
+                    },
+                },
+            });
+
+            const foundSlot = (slotResult.data ?? []).find(
+                (slot) =>
+                    slot.studentCode === normalisedStudentCode &&
+                    (slot as { revoked?: boolean | null }).revoked !== true
             );
 
-            if (result.errors && result.errors.length > 0) {
-                console.error("Student activation errors:", result.errors);
-                setErrorMessage("Could not access student workspace.");
-                return;
-            }
-
-            const activation = result.data;
-
-            if (!activation?.success) {
-                setErrorMessage(activation?.message ?? "Invalid class or student code.");
-                return;
-            }
-
-            if (!activation.classId || !activation.studentSlotId) {
-                console.error("Student activation succeeded but returned incomplete data:", activation);
-                setErrorMessage("Student workspace was not returned correctly.");
+            if (!foundSlot) {
+                setErrorMessage("Invalid student code.");
                 return;
             }
 
             localStorage.setItem(
                 STORAGE_KEY,
                 JSON.stringify({
-                    classId: activation.classId,
-                    studentSlotId: activation.studentSlotId,
-                    classCode: activation.classCode ?? normalisedClassCode,
-                    studentCode: activation.studentCode ?? normalisedStudentCode,
+                    classId: foundClass.id,
+                    studentSlotId: foundSlot.id,
+                    classCode: normalisedClassCode,
+                    studentCode: normalisedStudentCode,
                 })
             );
 
