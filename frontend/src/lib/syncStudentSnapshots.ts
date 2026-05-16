@@ -1,6 +1,13 @@
 import { generateClient } from "aws-amplify/data";
 import { listGridspaceSnapshots } from "./gridspaceStorage";
 
+type AmplifyError = {
+    message?: string;
+    errorType?: string;
+    path?: unknown;
+    locations?: unknown;
+};
+
 type SnapshotRecord = {
     id: string;
     snapshotKey?: string | null;
@@ -8,20 +15,31 @@ type SnapshotRecord = {
 
 type SnapshotListResult = {
     data?: SnapshotRecord[];
-    errors?: Array<{ message?: string }> | null;
+    errors?: AmplifyError[] | null;
 };
 
 type SnapshotMutationResult = {
     data?: unknown;
-    errors?: Array<{ message?: string }> | null;
+    errors?: AmplifyError[] | null;
 };
 
 type SnapshotModelClient = {
     models: {
-        StudentGridspaceSnapshot: {
-            list: (input?: object) => Promise<SnapshotListResult>;
-            create: (input: object) => Promise<SnapshotMutationResult>;
-            update: (input: object) => Promise<SnapshotMutationResult>;
+        StudentGridspaceSnapshot?: {
+            list: (
+                input?: object,
+                options?: { authMode?: "identityPool" }
+            ) => Promise<SnapshotListResult>;
+
+            create: (
+                input: object,
+                options?: { authMode?: "identityPool" }
+            ) => Promise<SnapshotMutationResult>;
+
+            update: (
+                input: object,
+                options?: { authMode?: "identityPool" }
+            ) => Promise<SnapshotMutationResult>;
         };
     };
 };
@@ -37,6 +55,27 @@ export type SyncStudentSnapshotsResult = {
     skipped: number;
     failed: number;
 };
+
+function formatAmplifyErrors(errors: AmplifyError[] | null | undefined): string {
+    if (!errors || errors.length === 0) return "Unknown Amplify error.";
+
+    return errors
+        .map((error) => {
+            return [
+                error.message ? `message=${error.message}` : null,
+                error.errorType ? `errorType=${error.errorType}` : null,
+                error.path ? `path=${JSON.stringify(error.path)}` : null,
+            ]
+                .filter(Boolean)
+                .join(" | ");
+        })
+        .join("\n");
+}
+
+function logAmplifyErrors(label: string, errors: AmplifyError[] | null | undefined) {
+    console.error(label, formatAmplifyErrors(errors));
+    console.error(`${label} raw`, JSON.stringify(errors, null, 2));
+}
 
 function parseStorageKey(storageKey: string): {
     studentSlotId: string;
@@ -68,9 +107,7 @@ export async function syncStudentSnapshots({
     classId,
     studentSlotId,
 }: SyncStudentSnapshotsParams): Promise<SyncStudentSnapshotsResult> {
-    const client = generateClient({
-        authMode: "identityPool",
-    }) as unknown as SnapshotModelClient;
+    const client = generateClient() as unknown as SnapshotModelClient;
 
     const snapshotModel = client.models.StudentGridspaceSnapshot;
 
@@ -90,6 +127,7 @@ export async function syncStudentSnapshots({
         const parsed = parseStorageKey(snapshot.storageKey);
 
         if (!parsed) {
+            console.warn("Skipping snapshot with invalid storage key:", snapshot.storageKey);
             skipped += 1;
             continue;
         }
@@ -125,17 +163,21 @@ export async function syncStudentSnapshots({
         };
 
         try {
-            const existingResult = await snapshotModel.list({
-                filter: {
-                    snapshotKey: {
-                        eq: snapshotKey,
+            const existingResult = await snapshotModel.list(
+                {
+                    filter: {
+                        snapshotKey: {
+                            eq: snapshotKey,
+                        },
                     },
                 },
-                authMode: "identityPool",
-            });
+                {
+                    authMode: "identityPool",
+                }
+            );
 
             if (existingResult.errors && existingResult.errors.length > 0) {
-                console.error("Snapshot lookup failed:", existingResult.errors);
+                logAmplifyErrors("Snapshot lookup failed:", existingResult.errors);
                 failed += 1;
                 continue;
             }
@@ -143,25 +185,33 @@ export async function syncStudentSnapshots({
             const existing = existingResult.data?.[0];
 
             const result = existing
-                ? await snapshotModel.update({
-                    id: existing.id,
-                    ...payload,
-                    authMode: "identityPool",
-                })
-                : await snapshotModel.create({
-                    ...payload,
-                    authMode: "identityPool",
-                });
+                ? await snapshotModel.update(
+                    {
+                        id: existing.id,
+                        ...payload,
+                    },
+                    {
+                        authMode: "identityPool",
+                    }
+                )
+                : await snapshotModel.create(
+                    {
+                        ...payload,
+                    },
+                    {
+                        authMode: "identityPool",
+                    }
+                );
 
             if (result.errors && result.errors.length > 0) {
-                console.error("Snapshot sync failed:", result.errors);
+                logAmplifyErrors("Snapshot sync failed:", result.errors);
                 failed += 1;
                 continue;
             }
 
             uploaded += 1;
         } catch (error) {
-            console.error("Snapshot sync failed:", error);
+            console.error("Snapshot sync threw an exception:", error);
             failed += 1;
         }
     }
