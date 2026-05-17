@@ -28,8 +28,10 @@
   "data": {
     "url": "https://uktbquwmpvew7mnchohay2qi4y.appsync-api.ap-southeast-2.amazonaws.com/graphql",
     "aws_region": "ap-southeast-2",
+    "api_key": "da2-yiezuiebgbel3mhcjfxtnw6cjm",
     "default_authorization_type": "AMAZON_COGNITO_USER_POOLS",
     "authorization_types": [
+      "API_KEY",
       "AWS_IAM"
     ],
     "model_introspection": {
@@ -210,7 +212,7 @@
                   },
                   {
                     "allow": "public",
-                    "provider": "identityPool",
+                    "provider": "apiKey",
                     "operations": [
                       "read"
                     ]
@@ -319,7 +321,7 @@
                   },
                   {
                     "allow": "public",
-                    "provider": "identityPool",
+                    "provider": "apiKey",
                     "operations": [
                       "read"
                     ]
@@ -449,7 +451,7 @@
                   },
                   {
                     "allow": "public",
-                    "provider": "identityPool",
+                    "provider": "apiKey",
                     "operations": [
                       "create",
                       "read",

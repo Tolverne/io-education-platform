@@ -90,7 +90,7 @@ function StudentAccess({
     const client = useMemo(
         () =>
             generateClient({
-                authMode: "identityPool",
+                authMode: "apiKey",
             }),
         []
     );
@@ -120,7 +120,7 @@ function StudentAccess({
 
         try {
             const classResult = await models.Class.list({
-                authMode: "identityPool",
+                authMode: "apiKey",
                 filter: {
                     classCode: {
                         eq: normalisedClassCode,
@@ -136,7 +136,7 @@ function StudentAccess({
             }
 
             const slotResult = await models.StudentSlot.list({
-                authMode: "identityPool",
+                authMode: "apiKey",
                 filter: {
                     classId: {
                         eq: foundClass.id,

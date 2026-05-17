@@ -28,17 +28,17 @@ type SnapshotModelClient = {
         StudentGridspaceSnapshot?: {
             list: (
                 input?: object,
-                options?: { authMode?: "identityPool" }
+                options?: { authMode?: "apiKey" }
             ) => Promise<SnapshotListResult>;
 
             create: (
                 input: object,
-                options?: { authMode?: "identityPool" }
+                options?: { authMode?: "apiKey" }
             ) => Promise<SnapshotMutationResult>;
 
             update: (
                 input: object,
-                options?: { authMode?: "identityPool" }
+                options?: { authMode?: "apiKey" }
             ) => Promise<SnapshotMutationResult>;
         };
     };
@@ -107,7 +107,9 @@ export async function syncStudentSnapshots({
     classId,
     studentSlotId,
 }: SyncStudentSnapshotsParams): Promise<SyncStudentSnapshotsResult> {
-    const client = generateClient() as unknown as SnapshotModelClient;
+    const client = generateClient({
+        authMode: "apiKey",
+    }) as unknown as SnapshotModelClient;
 
     const snapshotModel = client.models.StudentGridspaceSnapshot;
 
@@ -172,7 +174,7 @@ export async function syncStudentSnapshots({
                     },
                 },
                 {
-                    authMode: "identityPool",
+                    authMode: "apiKey",
                 }
             );
 
@@ -191,7 +193,7 @@ export async function syncStudentSnapshots({
                         ...payload,
                     },
                     {
-                        authMode: "identityPool",
+                        authMode: "apiKey",
                     }
                 )
                 : await snapshotModel.create(
@@ -199,7 +201,7 @@ export async function syncStudentSnapshots({
                         ...payload,
                     },
                     {
-                        authMode: "identityPool",
+                        authMode: "apiKey",
                     }
                 );
 
