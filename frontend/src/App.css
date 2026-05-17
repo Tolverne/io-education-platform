@@ -484,3 +484,82 @@ input {
     border-color: #fecaca;
     color: #991b1b;
 }
+
+.teacher-review-panel {
+    text-align: left;
+}
+
+.teacher-review-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.field-label {
+    display: block;
+    font-weight: 700;
+    margin-bottom: 0.35rem;
+}
+
+.review-select {
+    width: 100%;
+    max-width: 520px;
+    padding: 0.75rem;
+    border: 1px solid #cbd5e1;
+    border-radius: 12px;
+    background: white;
+    font-size: 1rem;
+}
+
+.review-summary {
+    margin: 1rem 0;
+    padding: 1rem;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 16px;
+}
+
+    .review-summary p {
+        margin: 0.25rem 0;
+    }
+
+.synced-gridspace-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+    margin-top: 1rem;
+}
+
+.synced-gridspace-card {
+    background: #ffffff;
+    border: 1px solid #cbd5e1;
+    border-radius: 20px;
+    padding: 1rem;
+}
+
+.synced-gridspace-meta {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 1rem;
+    border-bottom: 1px solid #e2e8f0;
+    padding-bottom: 0.75rem;
+}
+
+    .synced-gridspace-meta h3 {
+        margin: 0 0 0.5rem;
+    }
+
+    .synced-gridspace-meta p {
+        margin: 0.25rem 0;
+    }
+
+.readonly-gridspace-canvas {
+    width: 100%;
+}
+
+.readonly-canvas-blocker {
+    width: 100%;
+}

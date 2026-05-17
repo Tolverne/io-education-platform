@@ -4,6 +4,7 @@ import type { AuthUser } from "aws-amplify/auth";
 import { generateClient } from "aws-amplify/data";
 import "./App.css";
 import StudentWorkbook from "./components/StudentWorkbook";
+import ReadOnlyGridspaceCanvas from "./components/ReadOnlyGridspaceCanvas";
 
 type Mode = "landing" | "teacher" | "student";
 
@@ -18,6 +19,23 @@ type ClassRecord = {
     subject?: string | null;
     yearLevel?: string | null;
     classCode?: string | null;
+};
+
+type StudentGridspaceSnapshotRecord = {
+    id: string;
+    snapshotKey?: string | null;
+
+    classId?: string | null;
+    studentSlotId?: string | null;
+
+    workbookVersionId?: string | null;
+    chapterId?: string | null;
+    gridspaceId?: string | null;
+
+    pathsJson?: string | null;
+
+    localUpdatedAtIso?: string | null;
+    syncedAtIso?: string | null;
 };
 
 type StudentSlotRecord = {
@@ -46,6 +64,9 @@ type ClientModels = {
         list: (input?: object) => Promise<ListResult<StudentSlotRecord>>;
         create: (input: object) => Promise<ModelResult<StudentSlotRecord>>;
         delete: (input: { id: string }) => Promise<ModelResult<StudentSlotRecord>>;
+    };
+    StudentGridspaceSnapshot: {
+        list: (input?: object) => Promise<ListResult<StudentGridspaceSnapshotRecord>>;
     };
 };
 
@@ -259,6 +280,161 @@ function StudentDashboard({ logout }: { logout: () => void }) {
     );
 }
 
+
+function heightFromPathsFallback(): string {
+    return "400px";
+}
+
+function TeacherSyncedWorkReview({
+    classId,
+    studentSlots,
+    snapshots,
+    onBack,
+}: {
+    classId: string;
+    studentSlots: StudentSlotRecord[];
+    snapshots: StudentGridspaceSnapshotRecord[];
+    onBack: () => void;
+}) {
+    const [selectedStudentSlotId, setSelectedStudentSlotId] = useState<string | null>(
+        studentSlots[0]?.id ?? null
+    );
+
+    const snapshotsForSelectedStudent = snapshots.filter(
+        (snapshot) => snapshot.studentSlotId === selectedStudentSlotId
+    );
+
+    const selectedStudentSlot = studentSlots.find(
+        (slot) => slot.id === selectedStudentSlotId
+    );
+
+    return (
+        <div className="card wide-card teacher-review-panel">
+            <div className="teacher-review-header">
+                <div>
+                    <h2>Synced student work</h2>
+                    <p>
+                        Class ID: <code>{classId}</code>
+                    </p>
+                </div>
+
+                <button className="secondary" onClick={onBack}>
+                    Back to classes
+                </button>
+            </div>
+
+            {studentSlots.length === 0 ? (
+                <p>No student slots found for this class.</p>
+            ) : (
+                <>
+                    <label className="field-label" htmlFor="student-review-select">
+                        Select student slot
+                    </label>
+
+                    <select
+                        id="student-review-select"
+                        className="review-select"
+                        value={selectedStudentSlotId ?? ""}
+                        onChange={(event) => setSelectedStudentSlotId(event.target.value)}
+                    >
+                        {studentSlots.map((slot) => (
+                            <option key={slot.id} value={slot.id}>
+                                {slot.label ?? "Unnamed student slot"} —{" "}
+                                {slot.studentCode ?? "No code"}
+                            </option>
+                        ))}
+                    </select>
+
+                    <div className="review-summary">
+                        <p>
+                            Reviewing:{" "}
+                            <strong>
+                                {selectedStudentSlot?.label ?? "Unnamed student slot"}
+                            </strong>
+                        </p>
+
+                        <p>
+                            Synced gridspaces:{" "}
+                            <strong>{snapshotsForSelectedStudent.length}</strong>
+                        </p>
+                    </div>
+
+                    {snapshotsForSelectedStudent.length === 0 ? (
+                        <p>No synced work for this student yet.</p>
+                    ) : (
+                        <div className="synced-gridspace-list">
+                            {snapshotsForSelectedStudent.map((snapshot) => (
+                                <div
+                                    className="synced-gridspace-card"
+                                    key={snapshot.id}
+                                >
+                                    <div className="synced-gridspace-meta">
+                                        <div>
+                                            <h3>
+                                                Gridspace{" "}
+                                                <code>
+                                                    {snapshot.gridspaceId ??
+                                                        "unknown-gridspace"}
+                                                </code>
+                                            </h3>
+
+                                            <p>
+                                                Chapter:{" "}
+                                                <code>
+                                                    {snapshot.chapterId ??
+                                                        "unknown-chapter"}
+                                                </code>
+                                            </p>
+
+                                            <p>
+                                                Workbook:{" "}
+                                                <code>
+                                                    {snapshot.workbookVersionId ??
+                                                        "unknown-workbook"}
+                                                </code>
+                                            </p>
+                                        </div>
+
+                                        <div>
+                                            <p>
+                                                Local updated:
+                                                <br />
+                                                <small>
+                                                    {snapshot.localUpdatedAtIso ??
+                                                        "Unknown"}
+                                                </small>
+                                            </p>
+
+                                            <p>
+                                                Synced:
+                                                <br />
+                                                <small>
+                                                    {snapshot.syncedAtIso ?? "Unknown"}
+                                                </small>
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    {snapshot.pathsJson ? (
+                                        <ReadOnlyGridspaceCanvas
+                                            pathsJson={snapshot.pathsJson}
+                                            height={heightFromPathsFallback()}
+                                        />
+                                    ) : (
+                                        <p className="error-text">
+                                            This snapshot has no canvas data.
+                                        </p>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </>
+            )}
+        </div>
+    );
+}
+
 function TeacherDashboard({ signOut, user }: TeacherDashboardProps) {
     const client = useMemo(() => generateClient(), []);
     const models = useMemo(
@@ -266,9 +442,20 @@ function TeacherDashboard({ signOut, user }: TeacherDashboardProps) {
         [client]
     );
 
+
     const [classes, setClasses] = useState<ClassRecord[]>([]);
     const [studentSlots, setStudentSlots] = useState<StudentSlotRecord[]>([]);
     const [selectedClassId, setSelectedClassId] = useState<string | null>(null);
+
+
+    const [reviewClassId, setReviewClassId] = useState<string | null>(null);
+    const [reviewStudentSlots, setReviewStudentSlots] = useState<StudentSlotRecord[]>(
+        []
+    );
+    const [reviewSnapshots, setReviewSnapshots] = useState<
+        StudentGridspaceSnapshotRecord[]
+    >([]);
+    const [isReviewLoading, setIsReviewLoading] = useState(false);
 
     const [className, setClassName] = useState("");
     const [subject, setSubject] = useState("IB Mathematics AA");
@@ -310,6 +497,41 @@ function TeacherDashboard({ signOut, user }: TeacherDashboardProps) {
         setStudentSlots(result.data ?? []);
     }
 
+
+    async function loadSyncedWorkForClass(classId: string) {
+        setIsReviewLoading(true);
+        setErrorMessage(null);
+
+        try {
+            const slotResult = await models.StudentSlot.list({
+                filter: {
+                    classId: {
+                        eq: classId,
+                    },
+                },
+            });
+
+            const snapshotResult = await models.StudentGridspaceSnapshot.list({
+                authMode: "apiKey",
+                filter: {
+                    classId: {
+                        eq: classId,
+                    },
+                },
+            });
+
+            setReviewClassId(classId);
+            setReviewStudentSlots(slotResult.data ?? []);
+            setReviewSnapshots(snapshotResult.data ?? []);
+        } catch (error) {
+            console.error("Failed to load synced work:", error);
+            setErrorMessage("Could not load synced student work.");
+        } finally {
+            setIsReviewLoading(false);
+        }
+    }
+
+
     async function createClass() {
         if (!className.trim()) return;
 
@@ -340,10 +562,99 @@ function TeacherDashboard({ signOut, user }: TeacherDashboardProps) {
         await loadClasses();
     }
 
+
+
+    async function deleteClass(classId: string) {
+        const confirmed = window.confirm(
+            "Delete this class and all of its anonymous student slots? This cannot be undone."
+        );
+
+        if (!confirmed) return;
+
+        setIsLoading(true);
+        setErrorMessage(null);
+
+        try {
+            const slotResult = await models.StudentSlot.list({
+                filter: {
+                    classId: {
+                        eq: classId,
+                    },
+                },
+            });
+
+            const slots = slotResult.data ?? [];
+
+            for (const slot of slots) {
+                await models.StudentSlot.delete({
+                    id: slot.id,
+                });
+            }
+
+            await models.Class.delete({
+                id: classId,
+            });
+
+            if (selectedClassId === classId) {
+                setSelectedClassId(null);
+                setStudentSlots([]);
+            }
+
+            if (reviewClassId === classId) {
+                setReviewClassId(null);
+                setReviewStudentSlots([]);
+                setReviewSnapshots([]);
+            }
+
+            await loadClasses();
+        } catch (error) {
+            console.error("Failed to delete class:", error);
+            setErrorMessage("Could not delete class.");
+        } finally {
+            setIsLoading(false);
+        }
+    }
+
     useEffect(() => {
         void loadClasses();
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
+
+    if (isReviewLoading) {
+        return (
+            <main className="app-shell">
+                <section className="hero">
+                    <div className="card wide-card">
+                        <p>Loading synced student work...</p>
+                    </div>
+                </section>
+            </main>
+        );
+    }
+
+    if (reviewClassId) {
+        return (
+            <main className="app-shell">
+                <section className="hero">
+                    <h1>IO Education</h1>
+                    <p>Teacher dashboard</p>
+
+                    <TeacherSyncedWorkReview
+                        classId={reviewClassId}
+                        studentSlots={reviewStudentSlots}
+                        snapshots={reviewSnapshots}
+                        onBack={() => {
+                            setReviewClassId(null);
+                            setReviewStudentSlots([]);
+                            setReviewSnapshots([]);
+                        }}
+                    />
+                </section>
+            </main>
+        );
+    }
+
+
 
     return (
         <main className="app-shell">
@@ -405,8 +716,26 @@ function TeacherDashboard({ signOut, user }: TeacherDashboardProps) {
 
                                     <div className="row-actions">
                                         <code>{klass.classCode}</code>
+
                                         <button onClick={() => loadStudentSlots(klass.id)}>
                                             View students
+                                        </button>
+
+                                        <button
+                                            onClick={() => {
+                                                void loadSyncedWorkForClass(klass.id);
+                                            }}
+                                        >
+                                            View synced work
+                                        </button>
+
+                                        <button
+                                            className="danger"
+                                            onClick={() => {
+                                                void deleteClass(klass.id);
+                                            }}
+                                        >
+                                            Delete
                                         </button>
                                     </div>
                                 </div>
