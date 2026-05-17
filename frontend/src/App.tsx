@@ -5,6 +5,7 @@ import { generateClient } from "aws-amplify/data";
 import "./App.css";
 import StudentWorkbook from "./components/StudentWorkbook";
 import ReadOnlyGridspaceCanvas from "./components/ReadOnlyGridspaceCanvas";
+import ioLogo from "./assets/io-logo.png";
 
 type Mode = "landing" | "teacher" | "student";
 
@@ -84,8 +85,13 @@ function Landing({ setMode }: { setMode: (mode: Mode) => void }) {
     return (
         <main className="app-shell">
             <section className="hero">
-                <h1>IO Education</h1>
-                <p>Stylus-first digital workbooks for teachers and students.</p>
+                <div className="brand-lockup">
+                    <img src={ioLogo} alt="IO Education logo" className="brand-logo" />
+                    <div>
+                        <h1>IO Education</h1>
+                        <p>Stylus-first digital workbooks for teachers and students.</p>
+                    </div>
+                </div>
 
                 <div className="actions">
                     <button onClick={() => setMode("teacher")}>I am a teacher</button>
